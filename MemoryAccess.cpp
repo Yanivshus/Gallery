@@ -185,8 +185,18 @@ void MemoryAccess::deleteUser(const User& user)
 	if (doesUserExists(user.getId())) {
 	
 		for (auto iter = m_users.begin(); iter != m_users.end(); ++iter) {
-			if (*iter == user) {
-				iter = m_users.erase(iter);
+			if (*iter == user) 
+			{
+				//get the albums the user owns
+				std::list<Album> userAlbumList = getAlbumsOfUser(user);
+
+				//if the user get deleted all of his albums should get deleted.
+				while (userAlbumList.empty() == false)
+				{
+					deleteAlbum(userAlbumList.back().getName(), user.getId());//delete an album
+					userAlbumList.pop_back();// remove from album list.
+				}
+				iter = m_users.erase(iter);//delete the user after all albums were deleted.
 				return;
 			}
 		}
