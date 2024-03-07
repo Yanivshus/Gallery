@@ -1,5 +1,11 @@
 #include "DataBaseAccess.h"
 
+DatabaseAccess::DatabaseAccess()
+{
+	this->_db = nullptr;
+}
+
+
 bool DatabaseAccess::open()
 {
 	int fileExists = _access(DB_PATH_NAME, 0);
@@ -21,17 +27,14 @@ bool DatabaseAccess::open()
 		//build the query
 		std::string full_sql_query = albums_table + pictures_table + tags_table + users_table;
 		std::cout << full_sql_query << std::endl;
-		char* errMsg = nullptr;
-		res = sqlite3_exec(this->_db, full_sql_query.c_str(), nullptr, nullptr, &errMsg);//execute the query
-		//check if succefully created.
-		if (res != SQLITE_OK) {
-			std::cout << "not wotking" << std::endl;
+		if (!runQuery(full_sql_query)) 
+		{
 			return false;
 		}
-		return true;
 	}
 	return true;
 }
+
 
 void DatabaseAccess::close()
 {
@@ -39,8 +42,44 @@ void DatabaseAccess::close()
 	this->_db = nullptr;
 }
 
+
 void DatabaseAccess::clear()
 {
 	delete this->_db;
 	this->_db = nullptr;
+}
+
+
+
+void DatabaseAccess::tagUserInPicture(const std::string& albumName, const std::string& pictureName, int userId)
+{
+	std::string query = "INSERT INTO TAGS(PICTURE_ID, USER_ID) VALUES((SELECT ID FROM PICTURES WHERE ALBUM_ID = (SELECT ID FROM ALBUMS WHERE NAME = '" + albumName + "') AND NAME = '" + pictureName + "'), " + std::to_string(userId) + ");";
+	runQuery(query);
+}
+
+void DatabaseAccess::untagUserInPicture(const std::string& albumName, const std::string& pictureName, int userId)
+{
+	std::string query = "DELETE FROM TAGS WHERE PICTURE_ID = (SELECT ID FROM PICTURES WHERE ALBUM_ID = (SELECT ID FROM ALBUMS WHERE NAME = '"+albumName+"') AND NAME = '"+pictureName+"') AND USER_ID = "+std::to_string(userId)+"; ";
+	runQuery(query);
+}
+
+void DatabaseAccess::createUser(User& user)
+{
+	std::string query = "INSERT INTO USERS(NAME) VALUES('" + user.getName() + "');";
+	runQuery(query);
+}
+
+
+
+
+ bool DatabaseAccess::runQuery(const std::string& query)
+{
+	char* errMsg = nullptr;
+	int res = sqlite3_exec(this->_db, query.c_str(), nullptr, nullptr, &errMsg);//execute the query
+	if (res != SQLITE_OK) {
+		std::cout << query << std::endl;
+		std::cout << "Not working" << std::endl;
+		return false;
+	}
+	return true;
 }

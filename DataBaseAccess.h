@@ -2,13 +2,20 @@
 #include "IDataAccess.h"
 #include "sqlite3.h"
 #include <io.h>
+#include <string>
 
 #define DB_PATH_NAME "galleryDB.sqlite"
 
 class DatabaseAccess : public IDataAccess {
 public:
-	DatabaseAccess() = default;
+	DatabaseAccess();
 	~DatabaseAccess() = default;
+	//opens the db, if doesnt exists - creates new one with the tables.
+	virtual bool open() override; // done
+	//closes the connection with the db.
+	virtual void close() override; // done
+	//deletes allocated memmory.
+	virtual void clear() override; // done
 
 	// album related
 	virtual const std::list<Album> getAlbums() { return std::list<Album>(); };
@@ -23,12 +30,12 @@ public:
 	// picture related
 	virtual void addPictureToAlbumByName(const std::string& albumName, const Picture& picture) {};
 	virtual void removePictureFromAlbumByName(const std::string& albumName, const std::string& pictureName) {};
-	virtual void tagUserInPicture(const std::string& albumName, const std::string& pictureName, int userId) {};
-	virtual void untagUserInPicture(const std::string& albumName, const std::string& pictureName, int userId) {};
+	virtual void tagUserInPicture(const std::string& albumName, const std::string& pictureName, int userId) override;//done
+	virtual void untagUserInPicture(const std::string& albumName, const std::string& pictureName, int userId) override;//done
 	 
 	// user related
 	virtual void printUsers() {};
-	virtual void createUser(User& user) {};
+	virtual void createUser(User& user) override; // done
 	virtual void deleteUser(const User& user) {};
 	virtual bool doesUserExists(int userId) { return true; };
 	virtual User getUser(int userId) { return User(1,""); };
@@ -44,12 +51,9 @@ public:
 	virtual Picture getTopTaggedPicture() { return Picture(1,""); };
 	virtual std::list<Picture> getTaggedPicturesOfUser(const User& user) { return std::list<Picture>(); };
 	
-	//opens the db, if doesnt exists - creates new one with the tables.
-	virtual bool open() override;
-	//closes the connection with the db.
-	virtual void close() override;
-	//deletes allocated memmory.
-	virtual void clear() override;
+
 private:
+	//runs a given query, if succeeded return true, else false.
+	bool runQuery(const std::string& query);
 	sqlite3* _db;
 };
