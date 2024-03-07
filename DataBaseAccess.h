@@ -21,7 +21,7 @@ public:
 	virtual const std::list<Album> getAlbums() { return std::list<Album>(); };
 	virtual const std::list<Album> getAlbumsOfUser(const User& user) { return std::list<Album>(); };
 	virtual void createAlbum(const Album& album) {};
-	virtual void deleteAlbum(const std::string& albumName, int userId) {};
+	virtual void deleteAlbum(const std::string& albumName, int userId) override; // done
 	virtual bool doesAlbumExists(const std::string& albumName, int userId) { return true; };
 	virtual Album openAlbum(const std::string& albumName) { return Album(); };
 	virtual void closeAlbum(Album& pAlbum) {};
@@ -36,7 +36,7 @@ public:
 	// user related
 	virtual void printUsers() {};
 	virtual void createUser(User& user) override; // done
-	virtual void deleteUser(const User& user) {};
+	virtual void deleteUser(const User& user) override; // done
 	virtual bool doesUserExists(int userId) { return true; };
 	virtual User getUser(int userId) { return User(1,""); };
 	
@@ -53,6 +53,9 @@ public:
 	
 
 private:
+
+
+
 	//runs a given query, if succeeded return true, else false.
 	bool runQuery(const std::string& query);
 	sqlite3* _db;
