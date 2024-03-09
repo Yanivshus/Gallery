@@ -183,12 +183,26 @@ void MemoryAccess::createUser(User& user)
 void MemoryAccess::deleteUser(const User& user)
 {
 	if (doesUserExists(user.getId())) {
-	
+		int id_user = user.getId();
 		for (auto iter = m_users.begin(); iter != m_users.end(); ++iter) {
+
+			std::list<Album> albums_of_current = getAlbumsOfUser(*iter);
+			for (auto i = albums_of_current.begin(); i != albums_of_current.end(); i++)
+			{
+				std::list<Picture> pictures_of_current= (*i).getPictures();
+				for (auto g = pictures_of_current.begin(); g != pictures_of_current.end(); g++)
+				{
+					untagUserInPicture((*i).getName(), (*g).getName(), id_user);
+				}
+			}
+
+
+
 			if (*iter == user) 
 			{
 				//get the albums the user owns
 				std::list<Album> userAlbumList = getAlbumsOfUser(user);
+
 
 				//if the user get deleted all of his albums should get deleted.
 				while (userAlbumList.empty() == false)
