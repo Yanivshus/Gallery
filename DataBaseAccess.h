@@ -8,6 +8,8 @@
 #define USER_ID "USER_ID"
 #define NAME "NAME"
 #define CREATION_DATE "CREATION_DATE"
+#define ID "ID"
+#define LOCATION "LOCATION"
 
 
 #define DB_PATH_NAME "galleryDB.sqlite"
@@ -28,9 +30,9 @@ public:
 	virtual const std::list<Album> getAlbumsOfUser(const User& user) override; //done
 	virtual void createAlbum(const Album& album) override; //done
 	virtual void deleteAlbum(const std::string& albumName, int userId) override; // done
-	virtual bool doesAlbumExists(const std::string& albumName, int userId) override;
-	virtual Album openAlbum(const std::string& albumName) { return Album(); };
-	virtual void closeAlbum(Album& pAlbum) {};
+	virtual bool doesAlbumExists(const std::string& albumName, int userId) override; // done
+	virtual Album openAlbum(const std::string& albumName) override;// done
+	virtual void closeAlbum(Album& pAlbum) {} // done;
 	virtual void printAlbums() {};
 	
 	// picture related
@@ -63,6 +65,7 @@ private:
 	//for callbacks returns.
 	std::list<Album> _albums;
 	std::list<Picture> _pictures;
+	std::list<int> _tags;
 
 	//runs a given query, if succeeded return true, else false.
 	bool runQuery(const std::string& query);

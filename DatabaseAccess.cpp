@@ -24,6 +24,53 @@ int callbackGetAlbums(void* data, int argc, char** argv, char** azColName)
 	return 0;
 }
 
+int callbackGetPictures(void* data, int argc, char** argv, char** azColName) 
+{
+	auto& picturesList = *static_cast<std::list<Picture>*>(data);
+	Picture newPicture(0, "");
+
+	for (int i = 0; i < argc; i++)
+	{
+		if (std::string(azColName[i]) == ID) {
+			newPicture.setId(atoi(argv[i]));
+		}
+		else if (std::string(azColName[i]) == NAME) {
+			newPicture.setName(argv[i]);
+		}
+		else if (std::string(azColName[i]) == LOCATION) {
+			newPicture.setPath(argv[i]);
+		}
+		else if (std::string(azColName[i]) == CREATION_DATE) {
+			newPicture.setCreationDate(argv[i]);
+		}
+	}
+
+	picturesList.push_back(newPicture);
+	return 0;
+}
+
+int callbackGetId(void* data, int argc, char** argv, char** azColName) {
+	if (argc == 1 && argv[0] != nullptr) {
+		*static_cast<int*>(data) = atoi(argv[0]);
+		return 0;
+	}
+	return 1;
+}
+
+
+int callbackGetTags(void* data, int argc, char** argv, char** azColName) 
+{
+	auto& tagList = *static_cast<std::list<int>*>(data);
+
+	for (int i = 0; i < argc; i++){
+		if(std::string(azColName[i]) == USER_ID){
+			tagList.push_back(atoi(argv[i]));
+		}
+	}
+	return 0;
+}
+
+//actual functions
 DatabaseAccess::DatabaseAccess()
 {
 	this->_db = nullptr;
@@ -81,6 +128,7 @@ const std::list<Album> DatabaseAccess::getAlbums()
 	//execute the query
 	if (sqlite3_exec(this->_db, query.c_str(), callbackGetAlbums, &this->_albums, &errMsg) != SQLITE_OK) {
 		std::cout << "sql err" << std::endl;
+		std::cout << "Function: getAlbums" << std::endl;
 		std::cout << "reason: " << errMsg << std::endl;
 	}
 	return this->_albums;
@@ -94,6 +142,7 @@ const std::list<Album> DatabaseAccess::getAlbumsOfUser(const User& user)
 	//if qeury didnt worked we will print why.
 	if (sqlite3_exec(this->_db, query.c_str(), callbackGetAlbums, &this->_albums, &errMsg) != SQLITE_OK) {
 		std::cout << "sql err" << std::endl;
+		std::cout << "Function: getAlbumsOfUser" << std::endl;
 		std::cout << "reason: " << errMsg << std::endl;
 	}
 	return this->_albums;
@@ -118,15 +167,72 @@ void DatabaseAccess::deleteAlbum(const std::string& albumName, int userId)
 bool DatabaseAccess::doesAlbumExists(const std::string& albumName, int userId)
 {
 	this->_albums.clear();//deleting former return values
-	std::string query = "SELECT NAME FROM ALBUMS WHERE USER_ID='"+std::to_string(userId) + "' AND NAME='"+albumName+"'";
+	std::string query = "SELECT NAME FROM ALBUMS WHERE USER_ID="+std::to_string(userId) + " AND NAME='"+albumName+"'";
 
 	char* errMsg = nullptr;
 	//if qeury didnt worked we will print why.
 	if (sqlite3_exec(this->_db, query.c_str(), callbackGetAlbums, &this->_albums, &errMsg) != SQLITE_OK) {
 		std::cout << "sql err" << std::endl;
+		std::cout << "Function: doesAlbumExists" << std::endl;
 		std::cout << "reason: " << errMsg << std::endl;
 	}
 	return !this->_albums.empty();
+}
+
+Album DatabaseAccess::openAlbum(const std::string& albumName)
+{
+	this->_albums.clear();//deleting former return values
+	std::string query = "SELECT USER_ID, NAME, CREATION_DATE FROM ALBUMS WHERE NAME='" + albumName + "';";
+	char* errMsg = nullptr;
+	//execute the query
+	if (sqlite3_exec(this->_db, query.c_str(), callbackGetAlbums, &this->_albums, &errMsg) != SQLITE_OK) {
+		std::cout << "sql err" << std::endl;
+		std::cout << "Function: getAlbumsStart" << std::endl;
+		std::cout << "reason: " << errMsg << std::endl;
+	}
+
+	//now i will get the id of the album so i can get his pictures.
+	query = "SELECT ID FROM ALBUMS WHERE NAME='"+albumName+"';";
+	int id_of_album = 0;
+	if (sqlite3_exec(this->_db, query.c_str(), callbackGetId, &id_of_album, &errMsg) != SQLITE_OK) {
+		std::cout << "sql err" << std::endl;
+		std::cout << "Function: openAlbumGetInt" << std::endl;
+		std::cout << "reason: " << errMsg << std::endl;
+	}
+
+	// now i will get the pictures from the album.
+	this->_pictures.clear();
+	query = "SELECT ID, NAME, LOCATION, CREATION_DATE FROM PICTURES WHERE ALBUM_ID=" + std::to_string(id_of_album) + ";";
+	if (sqlite3_exec(this->_db, query.c_str(), callbackGetPictures, &this->_pictures, &errMsg) != SQLITE_OK) {
+		std::cout << "sql err" << std::endl;
+		std::cout << "Function: openAlbumGetPic" << std::endl;
+		std::cout << "reason: " << errMsg << std::endl;
+	}
+
+
+	
+	//run on the pictures, create tags for them.
+	for (const auto& i : this->_pictures)
+	{
+		//add the picture to the albums.
+		this->_albums.back().addPicture(Picture(i.getId(), i.getName(), i.getPath(), i.getCreationDate()));
+
+		query = "SELECT USER_ID FROM TAGS WHERE PICTURE_ID=" + std::to_string(i.getId()) + ";";
+		this->_tags.clear();
+		if (sqlite3_exec(this->_db, query.c_str(), callbackGetTags, &this->_tags, &errMsg) != SQLITE_OK) {
+			std::cout << "sql err" << std::endl;
+			std::cout << "Function: openAlbumGetTags" << std::endl;
+			std::cout << "reason: " << errMsg << std::endl;
+		}
+		//adding all the tags to the picture.
+		std::string currPic = i.getName();
+		for (const auto& g : this->_tags)
+		{
+			this->_albums.back().tagUserInPicture(g, currPic);
+		}
+
+	}
+	return this->_albums.back();
 }
 
 
