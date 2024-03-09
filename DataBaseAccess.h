@@ -4,6 +4,12 @@
 #include <io.h>
 #include <string>
 
+
+#define USER_ID "USER_ID"
+#define NAME "NAME"
+#define CREATION_DATE "CREATION_DATE"
+
+
 #define DB_PATH_NAME "galleryDB.sqlite"
 
 class DatabaseAccess : public IDataAccess {
@@ -18,11 +24,11 @@ public:
 	virtual void clear() override; // done
 
 	// album related
-	virtual const std::list<Album> getAlbums() { return std::list<Album>(); };
-	virtual const std::list<Album> getAlbumsOfUser(const User& user) { return std::list<Album>(); };
-	virtual void createAlbum(const Album& album) {};
+	virtual const std::list<Album> getAlbums() override;// done;
+	virtual const std::list<Album> getAlbumsOfUser(const User& user) override; //done
+	virtual void createAlbum(const Album& album) override; //done
 	virtual void deleteAlbum(const std::string& albumName, int userId) override; // done
-	virtual bool doesAlbumExists(const std::string& albumName, int userId) { return true; };
+	virtual bool doesAlbumExists(const std::string& albumName, int userId) override;
 	virtual Album openAlbum(const std::string& albumName) { return Album(); };
 	virtual void closeAlbum(Album& pAlbum) {};
 	virtual void printAlbums() {};
@@ -54,7 +60,9 @@ public:
 
 private:
 
-
+	//for callbacks returns.
+	std::list<Album> _albums;
+	std::list<Picture> _pictures;
 
 	//runs a given query, if succeeded return true, else false.
 	bool runQuery(const std::string& query);
