@@ -441,7 +441,7 @@ int DatabaseAccess::countAlbumsTaggedOfUser(const User& user)
 		std::cout << "sql err" << std::endl;
 		std::cout << "Function: countAlbumsTaggedOfUser" << std::endl;
 		std::cout << "reason: " << errMsg << std::endl;
-		throw MyException("There are no existing picture in album.");
+		throw MyException("There are no existing albums or tags.");
 	}
 	return count;
 }
@@ -474,6 +474,70 @@ float DatabaseAccess::averageTagsPerAlbumOfUser(const User& user)
 
 	return static_cast<float>(countTagsOfUser(user)) / albumsTaggedCount;
 }
+
+
+//queries
+User DatabaseAccess::getTopTaggedUser()
+{
+	//this query finds the user who is the most tagged.
+	std::string query = "SELECT USERS.ID, USERS.Name "
+		"FROM USERS "
+		"JOIN( "
+		"SELECT TAGS.USER_ID "
+		"FROM TAGS "
+		"GROUP BY TAGS.USER_ID "
+		"ORDER BY COUNT(*) DESC "
+		"LIMIT 1 "
+		") AS TopUser ON USERS.ID = TopUser.USER_ID;";
+
+	char* errMsg = nullptr;
+	this->_users.clear();
+
+	//execute the query
+	if (sqlite3_exec(this->_db, query.c_str(), callbackGetUsers, &this->_users, &errMsg) != SQLITE_OK) {
+		std::cout << "sql err" << std::endl;
+		std::cout << "Function: getTopTaggedUser" << std::endl;
+		std::cout << "reason: " << errMsg << std::endl;
+		
+		throw MyException("There are no tags.");
+	}
+	if (this->_users.empty()) {
+		return User(0, "");
+	}
+	return this->_users.back();
+}
+
+Picture DatabaseAccess::getTopTaggedPicture()
+{
+	this->_pictures.clear();
+	//this query gets the picture who is tagged the most.
+	std::string query = "SELECT PICTURES.ID,PICTURES.NAME,PICTURES.LOCATION,PICTURES.CREATION_DATE "
+		"FROM PICTURES "
+		"JOIN( "
+			"SELECT TAGS.PICTURE_ID "
+			"FROM TAGS "
+			"GROUP BY TAGS.PICTURE_ID "
+			"ORDER BY COUNT(*) DESC "
+			"LIMIT 1 "
+		") AS TopPic ON PICTURES.ID = TopPic.PICTURE_ID; """;
+
+	char* errMsg = nullptr;
+	//execute the query
+	if (sqlite3_exec(this->_db, query.c_str(), callbackGetPictures, &this->_pictures, &errMsg) != SQLITE_OK) {
+		std::cout << "sql err" << std::endl;
+		std::cout << "Function: getTopTaggedUser" << std::endl;
+		std::cout << "reason: " << errMsg << std::endl;
+
+		throw MyException("There are no tags.");
+	}
+	if (this->_pictures.empty()) {
+		return Picture(0, "");
+	}
+	return this->_pictures.back();
+}
+
+
+
 
 
 

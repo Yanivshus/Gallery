@@ -56,8 +56,8 @@ public:
 	virtual float averageTagsPerAlbumOfUser(const User& user) override; // done
 	
 	// queries
-	virtual User getTopTaggedUser() { return User(1,""); };
-	virtual Picture getTopTaggedPicture() { return Picture(1,""); };
+	virtual User getTopTaggedUser() override; // done
+	virtual Picture getTopTaggedPicture() override;
 	virtual std::list<Picture> getTaggedPicturesOfUser(const User& user) { return std::list<Picture>(); };
 	
 
