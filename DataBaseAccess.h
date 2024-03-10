@@ -51,8 +51,8 @@ public:
 	
 	 // user statistics
 	virtual int countAlbumsOwnedOfUser(const User& user) override; // done
-	virtual int countAlbumsTaggedOfUser(const User& user) { return 0; };
-	virtual int countTagsOfUser(const User& user) { return 0; };
+	virtual int countAlbumsTaggedOfUser(const User& user) override; // done
+	virtual int countTagsOfUser(const User& user) override; // done
 	virtual float averageTagsPerAlbumOfUser(const User& user) { return 1.0; };
 	
 	// queries

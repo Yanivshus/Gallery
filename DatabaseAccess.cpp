@@ -409,6 +409,8 @@ User DatabaseAccess::getUser(int userId)
 
 }
 
+
+//user statistics realated.
 int DatabaseAccess::countAlbumsOwnedOfUser(const User& user)
 {
 	std::list<Album> albums = getAlbums();
@@ -423,7 +425,46 @@ int DatabaseAccess::countAlbumsOwnedOfUser(const User& user)
 	return count;
 }
 
-//user statistics realated.
+int DatabaseAccess::countAlbumsTaggedOfUser(const User& user)
+{
+	// this query joins the albums tags and pictures table toghther and count the distinct number of albums which the user tagged in.
+	std::string query = "SELECT COUNT(DISTINCT ALBUMS.ID) "
+						"FROM ALBUMS "
+						"INNER JOIN PICTURES ON ALBUMS.ID = PICTURES.ALBUM_ID "
+						"INNER JOIN TAGS ON PICTURES.ID = TAGS.PICTURE_ID "
+						"WHERE TAGS.USER_ID = "+std::to_string(user.getId()) + ";";
+	
+	char* errMsg = nullptr;
+	int count = 0;
+	//execute the query
+	if (sqlite3_exec(this->_db, query.c_str(), callbackGetNum, &count, &errMsg) != SQLITE_OK) {
+		std::cout << "sql err" << std::endl;
+		std::cout << "Function: countAlbumsTaggedOfUser" << std::endl;
+		std::cout << "reason: " << errMsg << std::endl;
+		throw MyException("There are no existing picture in album.");
+	}
+	return count;
+}
+
+int DatabaseAccess::countTagsOfUser(const User& user)
+{
+	//this query count the number of tags user is tagged.
+	std::string query = "SELECT COUNT(TAGS.USER_ID)"
+						"FROM TAGS"
+						"WHERE TAGS.USER_ID = "+ std::to_string(user.getId()) + ";";
+	char* errMsg = nullptr;
+	int count = 0;
+	//execute the query
+	if (sqlite3_exec(this->_db, query.c_str(), callbackGetNum, &count, &errMsg) != SQLITE_OK) {
+		std::cout << "sql err" << std::endl;
+		std::cout << "Function: countTagsOfUser" << std::endl;
+		std::cout << "reason: " << errMsg << std::endl;
+		throw MyException("There are no existing picture in album.");
+	}
+	return count;
+}
+
+
 
 
 
