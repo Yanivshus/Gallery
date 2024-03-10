@@ -64,10 +64,32 @@ int callbackGetTags(void* data, int argc, char** argv, char** azColName)
 {
 	auto& tagList = *static_cast<std::list<int>*>(data);
 
-	for (int i = 0; i < argc; i++){
+	for (int i = 0; i < argc; i++)
+	{
 		if(std::string(azColName[i]) == USER_ID){
 			tagList.push_back(atoi(argv[i]));
 		}
+	}
+	return 0;
+}
+
+
+int callbackGetTagsAndUserIds(void* data, int argc, char** argv, char** azColName)
+{
+	auto& tagList = *static_cast<std::vector<std::pair<int, int>>*>(data);
+
+	for (int i = 0; i < argc; i++)
+	{
+		int pic_id = 0;
+		int user_id = 0;
+
+		if (std::string(azColName[i]) == USER_ID) {
+			user_id = atoi(argv[i]);
+		}
+		else if(std::string(azColName[i]) == PICTURE_ID){
+			pic_id = atoi(argv[i]);
+		}
+		tagList.push_back(std::make_pair(pic_id, user_id));
 	}
 	return 0;
 }
@@ -525,7 +547,7 @@ Picture DatabaseAccess::getTopTaggedPicture()
 	//execute the query
 	if (sqlite3_exec(this->_db, query.c_str(), callbackGetPictures, &this->_pictures, &errMsg) != SQLITE_OK) {
 		std::cout << "sql err" << std::endl;
-		std::cout << "Function: getTopTaggedUser" << std::endl;
+		std::cout << "Function: getTopTaggedPicture" << std::endl;
 		std::cout << "reason: " << errMsg << std::endl;
 
 		throw MyException("There are no tags.");
@@ -536,13 +558,49 @@ Picture DatabaseAccess::getTopTaggedPicture()
 	return this->_pictures.back();
 }
 
+std::list<Picture> DatabaseAccess::getTaggedPicturesOfUser(const User& user)
+{
+	std::string query = "SELECT PICTURES.ID,  PICTURES.NAME, PICTURES.LOCATION, PICTURES.CREATION_DATE "
+		"FROM PICTURES "
+		"JOIN TAGS ON PICTURES.ID = TAGS.PICTURE_ID "
+		"WHERE TAGS.USER_ID="+std::to_string(user.getId()) + ";";
+	this->_pictures.clear();
 
+	char* errMsg = nullptr;
+	//execute the query
+	if (sqlite3_exec(this->_db, query.c_str(), callbackGetPictures, &this->_pictures, &errMsg) != SQLITE_OK) {
+		std::cout << "sql err" << std::endl;
+		std::cout << "Function: getTaggedPicturesOfUser" << std::endl;
+		std::cout << "reason: " << errMsg << std::endl;
 
+		throw MyException("There are no pictures with tagged user.");
+	}
 
+	//now i will run on all the pictures and tag the users thet tagged on his pictures.
+	for (auto& pic : this->_pictures)
+	{
+		this->_tagAndUser.clear();
+		//query to select the users that are tagged.
+		std::string inQuery = "SELECT TAGS.PICTURE_ID, TAGS.USER_ID FROM TAGS WHERE TAGS.PICTURE_ID=" + std::to_string(pic.getId()) + ";";
+		//execute the query
+		if (sqlite3_exec(this->_db, inQuery.c_str(), callbackGetTagsAndUserIds, &this->_tagAndUser, &errMsg) != SQLITE_OK) {
+			std::cout << "sql err" << std::endl;
+			std::cout << "Function: getTaggedPicturesOfUserIn" << std::endl;
+			std::cout << "reason: " << errMsg << std::endl;
 
+			throw MyException("There are no tags.");
+		}
+		//run on the tags vector and add to the correct photos.
+		for (auto& tags : this->_tagAndUser)
+		{
+			if (tags.first == pic.getId()) {
+				pic.tagUser(tags.second);
+			}
+		}
+	}
 
-
-
+	return this->_pictures;
+}
 
 
 

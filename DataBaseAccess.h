@@ -4,6 +4,8 @@
 #include <io.h>
 #include <string>
 #include "MyException.h"
+#include <vector>
+
 
 
 #define USER_ID "USER_ID"
@@ -11,6 +13,8 @@
 #define CREATION_DATE "CREATION_DATE"
 #define ID "ID"
 #define LOCATION "LOCATION"
+#define ALBUM_ID "ALBUM_ID"
+#define PICTURE_ID "PICTURE_ID"
 
 
 #define DB_PATH_NAME "galleryDB.sqlite"
@@ -57,8 +61,8 @@ public:
 	
 	// queries
 	virtual User getTopTaggedUser() override; // done
-	virtual Picture getTopTaggedPicture() override;
-	virtual std::list<Picture> getTaggedPicturesOfUser(const User& user) { return std::list<Picture>(); };
+	virtual Picture getTopTaggedPicture() override; // done
+	virtual std::list<Picture> getTaggedPicturesOfUser(const User& user) override; // done
 	
 
 private:
@@ -68,6 +72,9 @@ private:
 	std::list<Picture> _pictures;
 	std::list<int> _tags;
 	std::list<User> _users;
+	
+	std::vector<std::pair<int, int>> _tagAndUser;
+	
 
 	//runs a given query, if succeeded return true, else false.
 	bool runQuery(const std::string& query);
