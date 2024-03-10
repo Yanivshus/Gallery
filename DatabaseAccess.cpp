@@ -412,6 +412,15 @@ User DatabaseAccess::getUser(int userId)
 int DatabaseAccess::countAlbumsOwnedOfUser(const User& user)
 {
 	std::list<Album> albums = getAlbums();
+	int count = 0;
+	//run on the albums and check which is the user albums.
+	for (const auto& album : albums )
+	{
+		if (album.getOwnerId() == user.getId()) {
+			count++;
+		}
+	}
+	return count;
 }
 
 //user statistics realated.

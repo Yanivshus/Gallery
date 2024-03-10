@@ -50,7 +50,7 @@ public:
 	virtual User getUser(int userId) override; // done
 	
 	 // user statistics
-	virtual int countAlbumsOwnedOfUser(const User& user) override;
+	virtual int countAlbumsOwnedOfUser(const User& user) override; // done
 	virtual int countAlbumsTaggedOfUser(const User& user) { return 0; };
 	virtual int countTagsOfUser(const User& user) { return 0; };
 	virtual float averageTagsPerAlbumOfUser(const User& user) { return 1.0; };
