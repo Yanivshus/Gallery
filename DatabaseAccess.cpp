@@ -449,8 +449,8 @@ int DatabaseAccess::countAlbumsTaggedOfUser(const User& user)
 int DatabaseAccess::countTagsOfUser(const User& user)
 {
 	//this query count the number of tags user is tagged.
-	std::string query = "SELECT COUNT(TAGS.USER_ID)"
-						"FROM TAGS"
+	std::string query = "SELECT COUNT(TAGS.USER_ID) "
+						"FROM TAGS "
 						"WHERE TAGS.USER_ID = "+ std::to_string(user.getId()) + ";";
 	char* errMsg = nullptr;
 	int count = 0;
@@ -459,9 +459,20 @@ int DatabaseAccess::countTagsOfUser(const User& user)
 		std::cout << "sql err" << std::endl;
 		std::cout << "Function: countTagsOfUser" << std::endl;
 		std::cout << "reason: " << errMsg << std::endl;
-		throw MyException("There are no existing picture in album.");
+		throw MyException("There are tags.");
 	}
 	return count;
+}
+
+float DatabaseAccess::averageTagsPerAlbumOfUser(const User& user)
+{
+	int albumsTaggedCount = countAlbumsTaggedOfUser(user);
+
+	if (0 == albumsTaggedCount) {
+		return 0;
+	}
+
+	return static_cast<float>(countTagsOfUser(user)) / albumsTaggedCount;
 }
 
 
