@@ -38,7 +38,7 @@ public:
 	
 	// picture related
 	virtual void addPictureToAlbumByName(const std::string& albumName, const Picture& picture) override; // done
-	virtual void removePictureFromAlbumByName(const std::string& albumName, const std::string& pictureName) {};
+	virtual void removePictureFromAlbumByName(const std::string& albumName, const std::string& pictureName) override; //done
 	virtual void tagUserInPicture(const std::string& albumName, const std::string& pictureName, int userId) override;//done
 	virtual void untagUserInPicture(const std::string& albumName, const std::string& pictureName, int userId) override;//done
 	 

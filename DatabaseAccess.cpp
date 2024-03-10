@@ -49,7 +49,7 @@ int callbackGetPictures(void* data, int argc, char** argv, char** azColName)
 	return 0;
 }
 
-int callbackGetId(void* data, int argc, char** argv, char** azColName) {
+int callbackGetNum(void* data, int argc, char** argv, char** azColName) {
 	if (argc == 1 && argv[0] != nullptr) {
 		*static_cast<int*>(data) = atoi(argv[0]);
 		return 0;
@@ -193,7 +193,7 @@ Album DatabaseAccess::openAlbum(const std::string& albumName)
 	//now i will get the id of the album so i can get his pictures.
 	query = "SELECT ID FROM ALBUMS WHERE NAME='"+albumName+"';";
 	int id_of_album = 0;
-	if (sqlite3_exec(this->_db, query.c_str(), callbackGetId, &id_of_album, &errMsg) != SQLITE_OK) {
+	if (sqlite3_exec(this->_db, query.c_str(), callbackGetNum, &id_of_album, &errMsg) != SQLITE_OK) {
 		std::cout << "sql err" << std::endl;
 		std::cout << "Function: openAlbumGetInt" << std::endl;
 		std::cout << "reason: " << errMsg << std::endl;
@@ -258,13 +258,34 @@ void DatabaseAccess::addPictureToAlbumByName(const std::string& albumName, const
 	std::string query = "SELECT ID FROM ALBUMS WHERE NAME='" + albumName + "';";
 	char* errMsg = nullptr;
 	//execute the query
-	if (sqlite3_exec(this->_db, query.c_str(), callbackGetId, &id, &errMsg) != SQLITE_OK) {
+	if (sqlite3_exec(this->_db, query.c_str(), callbackGetNum, &id, &errMsg) != SQLITE_OK) {
 		std::cout << "sql err" << std::endl;
-		std::cout << "Function: getAlbums" << std::endl;
+		std::cout << "Function: addPictureToAlbumByName" << std::endl;
 		std::cout << "reason: " << errMsg << std::endl;
+		return;
 	}
 
 	query = "INSERT INTO PICTURES(NAME, LOCATION, CREATION_DATE,ALBUM_ID) VALUES('" + picture.getName() + "', '" + picture.getPath() + "', '" + picture.getCreationDate() + "', " + std::to_string(id) + ");";
+	runQuery(query);
+}
+
+void DatabaseAccess::removePictureFromAlbumByName(const std::string& albumName, const std::string& pictureName)
+{
+	//first i will get the picture id.
+	std::string query = "SELECT ID FROM PICTURES WHERE PICTURES.ALBUM_ID=(SELECT ID FROM ALBUMS WHERE ALBUMS.NAME='" + albumName + "') AND PICTURES.NAME='" + pictureName + "';";
+	char* errMsg = nullptr;
+	int id = 0;
+	//execute the query
+	if (sqlite3_exec(this->_db, query.c_str(), callbackGetNum, &id, &errMsg) != SQLITE_OK) {
+		std::cout << "sql err" << std::endl;
+		std::cout << "Function: removePictureFromAlbumByName" << std::endl;
+		std::cout << "reason: " << errMsg << std::endl;
+		throw MyException("There are no existing picture in album.");
+	}
+	//now i will delete from the tags and the picture it self.
+	query = "DELETE FROM TAGS WHERE TAGS.PICTURE_ID=" + std::to_string(id) + ";";
+	runQuery(query);
+	query = "DELETE FROM PICTURES WHERE PICTURES.ID="+ std::to_string(id) +";";
 	runQuery(query);
 }
 
