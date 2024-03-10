@@ -154,7 +154,6 @@ void DatabaseAccess::createAlbum(const Album& album)
 	runQuery(query);
 }
 
-
 void DatabaseAccess::deleteAlbum(const std::string& albumName, int userId)
 {
 	std::string tags_del = "DELETE FROM TAGS WHERE TAGS.PICTURE_ID=(SELECT PICTURES.ID FROM PICTURES WHERE PICTURES.ALBUM_ID=(SELECT ALBUMS.ID FROM ALBUMS WHERE ALBUMS.NAME='" + albumName + "' AND ALBUMS.USER_ID=" + std::to_string(userId) + "));";
@@ -235,7 +234,39 @@ Album DatabaseAccess::openAlbum(const std::string& albumName)
 	return this->_albums.back();
 }
 
+void DatabaseAccess::printAlbums()
+{
+	this->_albums.clear();
+	std::list<Album> albumToPrint = getAlbums();
+	if (albumToPrint.empty()) {
+		throw MyException("There are no existing albums.");
+	}
+	else {
+		for (const auto& album : albumToPrint)
+		{
+			std::cout << std::setw(5) << "* " << album;
+			std::cout << "     Created on : " << album.getCreationDate() << std::endl;
+		}
+	}
+}
 
+
+
+void DatabaseAccess::addPictureToAlbumByName(const std::string& albumName, const Picture& picture)
+{
+	int id = 0;
+	std::string query = "SELECT ID FROM ALBUMS WHERE NAME='" + albumName + "';";
+	char* errMsg = nullptr;
+	//execute the query
+	if (sqlite3_exec(this->_db, query.c_str(), callbackGetId, &id, &errMsg) != SQLITE_OK) {
+		std::cout << "sql err" << std::endl;
+		std::cout << "Function: getAlbums" << std::endl;
+		std::cout << "reason: " << errMsg << std::endl;
+	}
+
+	query = "INSERT INTO PICTURES(NAME, LOCATION, CREATION_DATE,ALBUM_ID) VALUES('" + picture.getName() + "', '" + picture.getPath() + "', '" + picture.getCreationDate() + "', " + std::to_string(id) + ");";
+	runQuery(query);
+}
 
 void DatabaseAccess::tagUserInPicture(const std::string& albumName, const std::string& pictureName, int userId)
 {

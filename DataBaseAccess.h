@@ -3,6 +3,7 @@
 #include "sqlite3.h"
 #include <io.h>
 #include <string>
+#include "MyException.h"
 
 
 #define USER_ID "USER_ID"
@@ -33,10 +34,10 @@ public:
 	virtual bool doesAlbumExists(const std::string& albumName, int userId) override; // done
 	virtual Album openAlbum(const std::string& albumName) override;// done
 	virtual void closeAlbum(Album& pAlbum) {} // done;
-	virtual void printAlbums() {};
+	virtual void printAlbums() override; // done
 	
 	// picture related
-	virtual void addPictureToAlbumByName(const std::string& albumName, const Picture& picture) {};
+	virtual void addPictureToAlbumByName(const std::string& albumName, const Picture& picture) override; // done
 	virtual void removePictureFromAlbumByName(const std::string& albumName, const std::string& pictureName) {};
 	virtual void tagUserInPicture(const std::string& albumName, const std::string& pictureName, int userId) override;//done
 	virtual void untagUserInPicture(const std::string& albumName, const std::string& pictureName, int userId) override;//done
