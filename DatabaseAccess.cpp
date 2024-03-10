@@ -24,6 +24,7 @@ int callbackGetAlbums(void* data, int argc, char** argv, char** azColName)
 	return 0;
 }
 
+
 int callbackGetPictures(void* data, int argc, char** argv, char** azColName) 
 {
 	auto& picturesList = *static_cast<std::list<Picture>*>(data);
@@ -49,6 +50,7 @@ int callbackGetPictures(void* data, int argc, char** argv, char** azColName)
 	return 0;
 }
 
+
 int callbackGetNum(void* data, int argc, char** argv, char** azColName) {
 	if (argc == 1 && argv[0] != nullptr) {
 		*static_cast<int*>(data) = atoi(argv[0]);
@@ -70,12 +72,31 @@ int callbackGetTags(void* data, int argc, char** argv, char** azColName)
 	return 0;
 }
 
+
+int callbackGetUsers(void* data, int argc, char** argv, char** azColName) 
+{
+	auto& usersList = *static_cast<std::list<User>*>(data);
+
+	User newUser(0, "");
+	for (int i = 0; i < argc; i++)
+	{
+		if (std::string(azColName[i]) == ID) {
+			newUser.setId(atoi(argv[i]));
+		}
+		else if (std::string(azColName[i]) == NAME) {
+			newUser.setName(argv[i]);
+		}
+	}
+	usersList.push_back(newUser);
+	return 0;
+}
+
+
 //actual functions
 DatabaseAccess::DatabaseAccess()
 {
 	this->_db = nullptr;
 }
-
 
 bool DatabaseAccess::open()
 {
@@ -106,13 +127,11 @@ bool DatabaseAccess::open()
 	return true;
 }
 
-
 void DatabaseAccess::close()
 {
 	sqlite3_close(this->_db);//close the data base;
 	this->_db = nullptr;
 }
-
 
 void DatabaseAccess::clear()
 {
@@ -120,6 +139,8 @@ void DatabaseAccess::clear()
 	this->_db = nullptr;
 }
 
+
+//album realated.
 const std::list<Album> DatabaseAccess::getAlbums()
 {
 	this->_albums.clear();//deleting former return values
@@ -242,6 +263,8 @@ void DatabaseAccess::printAlbums()
 		throw MyException("There are no existing albums.");
 	}
 	else {
+		std::cout << "Album list:" << std::endl;
+		std::cout << "-----------" << std::endl;
 		for (const auto& album : albumToPrint)
 		{
 			std::cout << std::setw(5) << "* " << album;
@@ -251,7 +274,7 @@ void DatabaseAccess::printAlbums()
 }
 
 
-
+//picture realated.
 void DatabaseAccess::addPictureToAlbumByName(const std::string& albumName, const Picture& picture)
 {
 	int id = 0;
@@ -301,6 +324,33 @@ void DatabaseAccess::untagUserInPicture(const std::string& albumName, const std:
 	runQuery(query);
 }
 
+
+//user realted.
+void DatabaseAccess::printUsers()
+{
+	this->_users.clear();
+	std::string query = "SELECT * FROM USERS";
+	char* errMsg = nullptr;
+	if (sqlite3_exec(this->_db, query.c_str(), callbackGetUsers, &this->_users, &errMsg) != SQLITE_OK) {
+		std::cout << "sql err" << std::endl;
+		std::cout << "Function: printUsers" << std::endl;
+		std::cout << "reason: " << errMsg << std::endl;
+		return;
+	}
+
+	if (this->_users.empty()) {//if there are no users in the db.
+		throw MyException("There are no existing users.");
+	}
+	else {
+		std::cout << "Users list:" << std::endl;
+		std::cout << "-----------" << std::endl;
+		for (const auto& user : this->_users)
+		{
+			std::cout << user << std::endl;
+		}
+	}
+}
+
 void DatabaseAccess::createUser(User& user)
 {
 	std::string query = "INSERT INTO USERS(NAME) VALUES('" + user.getName() + "');";
@@ -317,6 +367,57 @@ void DatabaseAccess::deleteUser(const User& user)
 
 	runQuery(del_tags + del_pics + del_al + del_user);
 }
+
+bool DatabaseAccess::doesUserExists(int userId)
+{
+	this->_users.clear();
+	std::string query = "SELECT * FROM USERS WHERE ID=" + std::to_string(userId) + ";";
+	char* errMsg = nullptr;
+	if (sqlite3_exec(this->_db, query.c_str(), callbackGetUsers, &this->_users, &errMsg) != SQLITE_OK) {
+		std::cout << "sql err" << std::endl;
+		std::cout << "Function: doesUserExists" << std::endl;
+		std::cout << "reason: " << errMsg << std::endl;
+		return false;
+	}
+	//if user wasnt fount we return false.
+	if (this->_users.empty()) {
+		return false;
+	}
+	return true;
+}
+
+User DatabaseAccess::getUser(int userId)
+{
+	//checking first if the user exists.
+	if (doesUserExists(userId)) {
+		// if yes i will get him from the db.
+		this->_users.clear();
+		std::string query = "SELECT * FROM USERS WHERE ID=" + std::to_string(userId) + ";";
+		char* errMsg = nullptr;
+		if (sqlite3_exec(this->_db, query.c_str(), callbackGetUsers, &this->_users, &errMsg) != SQLITE_OK) {
+			std::cout << "sql err" << std::endl;
+			std::cout << "Function: doesUserExists" << std::endl;
+			std::cout << "reason: " << errMsg << std::endl;
+			throw MyException("There are no existing users.");
+		}
+		return this->_users.back();//return the user, there is alwayes one.
+	}
+	else
+	{
+		return User(-1, "");
+	}
+
+}
+
+int DatabaseAccess::countAlbumsOwnedOfUser(const User& user)
+{
+	std::list<Album> albums = getAlbums();
+}
+
+//user statistics realated.
+
+
+
 
 
 

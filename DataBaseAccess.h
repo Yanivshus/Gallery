@@ -43,14 +43,14 @@ public:
 	virtual void untagUserInPicture(const std::string& albumName, const std::string& pictureName, int userId) override;//done
 	 
 	// user related
-	virtual void printUsers() {};
+	virtual void printUsers() override;// done
 	virtual void createUser(User& user) override; // done
 	virtual void deleteUser(const User& user) override; // done
-	virtual bool doesUserExists(int userId) { return true; };
-	virtual User getUser(int userId) { return User(1,""); };
+	virtual bool doesUserExists(int userId) override; // done
+	virtual User getUser(int userId) override; // done
 	
 	 // user statistics
-	virtual int countAlbumsOwnedOfUser(const User& user) { return 0; };
+	virtual int countAlbumsOwnedOfUser(const User& user) override;
 	virtual int countAlbumsTaggedOfUser(const User& user) { return 0; };
 	virtual int countTagsOfUser(const User& user) { return 0; };
 	virtual float averageTagsPerAlbumOfUser(const User& user) { return 1.0; };
@@ -67,6 +67,7 @@ private:
 	std::list<Album> _albums;
 	std::list<Picture> _pictures;
 	std::list<int> _tags;
+	std::list<User> _users;
 
 	//runs a given query, if succeeded return true, else false.
 	bool runQuery(const std::string& query);
