@@ -5,6 +5,8 @@
 #include "AlbumNotOpenException.h"
 
 
+
+
 AlbumManager::AlbumManager(IDataAccess& dataAccess) :
     m_dataAccess(dataAccess), m_nextPictureId(100), m_nextUserId(200)
 {
@@ -189,6 +191,27 @@ void AlbumManager::listPicturesInAlbum()
 	std::cout << std::endl;
 }
 
+PROCESS_INFORMATION pi = { 0 };
+
+/// <summary>
+/// global function to catch handler of ctrl c, if ctrl c was caught it will terminate the process.
+/// </summary>
+/// <param name="fdwCtrlType:"> the ctrl type entered, ctrl c/b and so on </param>
+/// <returns></returns>
+BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
+{
+	switch (fdwCtrlType)
+	{
+		// Handle the CTRL-C signal. 
+	case CTRL_C_EVENT:
+		printf("Ctrl-C event\n\n");
+		TerminateProcess(pi.hProcess, 0);//if detected a ctrl c handker we will close the process.
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
 void AlbumManager::showPicture()
 {
 	refreshOpenAlbum();
@@ -203,10 +226,62 @@ void AlbumManager::showPicture()
 		throw MyException("Error: Can't open <" + picName+ "> since it doesnt exist on disk.\n");
 	}
 
-	// Bad practice!!!
-	// Can lead to privileges escalation
-	// You will replace it on WinApi Lab(bonus)
-	system(pic.getPath().c_str()); 
+	std::string choice = "";
+	bool flag = false;
+	//running untill the user picks a program.
+	while (flag == false) {
+		std::cout << "	Enter with which program you want to open the picture (p-mspaint, i-irfanview): ";
+		std::cin >> choice;
+		//if the user entered p or i the loop will stop.
+		if (choice == "i" || choice == "p") {
+			flag = true;
+		}
+	}
+
+	std::string exePath = "";
+	LPCSTR lp = "";
+	std::string imagePath = "";
+	std::string cmdLine = "";
+	LPSTR cmdLinePtr = "";
+
+	//checking which program the user chose.
+	if (choice == "p") {
+		exePath = "C:\\Windows\\System32\\mspaint.exe";
+		lp = exePath.c_str();
+
+		cmdLine += "/p " + pic.getPath();
+		cmdLinePtr = const_cast<LPSTR>(cmdLine.c_str());
+	}
+	else if (choice == "i") {
+		exePath = "C:\\IrfanView\\i_view32.exe";
+		lp = NULL;
+
+		//creating the path of the irfanview picture.
+		cmdLine += exePath + " \"" + pic.getPath() + " \"";
+		cmdLinePtr = const_cast<LPSTR>(cmdLine.c_str());
+		
+	}
+
+	//nescessry veriables to create a process.
+	STARTUPINFO si = { 0 };
+	si.cb = sizeof(STARTUPINFO);
+	si.dwFlags = STARTF_USESHOWWINDOW;
+	si.wShowWindow = true;
+
+	BOOL ret = CreateProcess(lp, cmdLinePtr, NULL, NULL, false, 0, NULL, NULL, &si, &pi);//start the proscess.
+
+	//if the process couldnt be created we will print the error and wait a bit so the user could read it.
+	if (ret == FALSE) {
+		std::cout << "CreateProcess failed .\n" << GetLastError() << std::endl;
+		std::this_thread::sleep_for(std::chrono::seconds(3));
+	}
+	
+
+	if (SetConsoleCtrlHandler(CtrlHandler, true)) {};
+	WaitForSingleObject(pi.hProcess, -1);
+	CloseHandle(pi.hThread);
+	CloseHandle(pi.hProcess);
+	
 }
 
 void AlbumManager::tagUserInPicture()
@@ -382,6 +457,8 @@ void AlbumManager::help()
 	system("CLS");
 	printHelp();
 }
+
+
 
 std::string AlbumManager::getInputFromConsole(const std::string& message)
 {

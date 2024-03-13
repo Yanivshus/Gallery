@@ -3,6 +3,10 @@
 #include "Constants.h"
 #include "MemoryAccess.h"
 #include "Album.h"
+#include <windows.h>
+#include <string>
+#include <chrono>
+#include <thread>
 
 
 class AlbumManager
@@ -52,6 +56,11 @@ private:
 	void topTaggedPicture();
 	void picturesTaggedUser();
 	void exit();
+
+
+	
+	
+
 
 	std::string getInputFromConsole(const std::string& message);
 	bool fileExistsOnDisk(const std::string& filename);
