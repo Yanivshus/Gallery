@@ -59,7 +59,16 @@ private:
 	void picturesTaggedUser();
 	void exit();
 
+	//bonuses
+
+	/// <summary>
+	/// creates a copy of the picture.
+	/// </summary>
 	void createPicCopy();
+	
+	/// <summary>
+	/// changes the file premissions to readonly and back.
+	/// </summary>
 	void changeFilePremissions();
 
 
