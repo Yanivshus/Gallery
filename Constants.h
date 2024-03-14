@@ -35,6 +35,9 @@ enum CommandType
 	PICTURES_TAGGED_USER,
 
 	COPY_PICTURE,
+	CHANGE_PREM
+	,
+
 
 	EXIT = 99
 };

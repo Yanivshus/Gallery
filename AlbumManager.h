@@ -60,6 +60,7 @@ private:
 	void exit();
 
 	void createPicCopy();
+	void changeFilePremissions();
 
 
 	/// <summary>

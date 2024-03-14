@@ -542,6 +542,66 @@ void AlbumManager::createPicCopy()
 
 }
 
+void AlbumManager::changeFilePremissions()
+{
+	//get the picture path from user.
+	std::string picName = getInputFromConsole("Enter picture path: ");
+	if (!fileExistsOnDisk(picName)) {
+		throw MyException("Error: Can't open <" + picName + "> since it doesnt exist on disk.\n");
+	}
+
+	//get the picture attributes.
+	DWORD attributes = GetFileAttributesA(picName.c_str());
+	if (attributes == INVALID_FILE_ATTRIBUTES) {
+		DWORD error = GetLastError();
+		throw MyException("failed to get file attributes.");
+	}
+
+	// run a loop to determine if the user want to make the picture readonly - 1.
+	// or make the picture writeable - 0.
+	std::string choice = "";
+	while (choice != "1" && choice != "0") {
+		std::cout << "	Enter 1 if you wan't to make the file readonly or 0 to make it writable: ";
+		std::cin >> choice;
+	}
+
+	// if the user chose 1
+	if (choice == "1")
+	{
+		//we will check if the picture is already set to readonly.
+		if (attributes & FILE_ATTRIBUTE_READONLY)
+		{
+			std::cout << "file already readonly" << std::endl;
+		}
+		else // if not i will set it to readonly.
+		{
+			if (!SetFileAttributesA(picName.c_str(), FILE_ATTRIBUTE_READONLY))
+			{
+				DWORD error = GetLastError();
+				std::cerr << "Failed to set file attributes: " << error << std::endl;
+				throw MyException("failed to set file attributes.");
+			}
+		}
+	}
+	else if (choice == "0")
+	{
+		if (attributes & FILE_ATTRIBUTE_READONLY) // if the picture is readonly we will delete the readonly attribue and set it.
+		{
+			attributes &= ~FILE_ATTRIBUTE_READONLY;
+			if (!SetFileAttributesA(picName.c_str(), attributes)) 
+			{
+				DWORD error = GetLastError();
+				std::cerr << "Failed to set file attributes: " << error << std::endl;
+				throw MyException("failed to set file attributes.");
+			}
+			else 
+			{
+				std::cout << "file already writeable" << std::endl;
+			}
+		}
+	}
+}
+
 
 void AlbumManager::help()
 {
@@ -625,6 +685,7 @@ const std::vector<struct CommandGroup> AlbumManager::m_prompts  = {
 		"Supported Operations:",
 		{
 			{COPY_PICTURE, "Create a copy of picture in album."},
+			{CHANGE_PREM, "Change file to readonly or backwards."},
 			{ HELP , "Help (clean screen)" },
 			{ EXIT , "Exit." },
 		}
@@ -653,6 +714,7 @@ const std::map<CommandType, AlbumManager::handler_func_t> AlbumManager::m_comman
 	{ TOP_TAGGED_PICTURE, &AlbumManager::topTaggedPicture },
 	{ PICTURES_TAGGED_USER, &AlbumManager::picturesTaggedUser },
 	{COPY_PICTURE, &AlbumManager::createPicCopy },
+	{CHANGE_PREM, &AlbumManager::changeFilePremissions},
 	{ HELP, &AlbumManager::help },
 	{ EXIT, &AlbumManager::exit }
 };
