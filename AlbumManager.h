@@ -8,6 +8,7 @@
 #include <chrono>
 #include <thread>
 #include <fileapi.h>
+#include <fstream>
 
 
 class AlbumManager
@@ -57,6 +58,8 @@ private:
 	void topTaggedPicture();
 	void picturesTaggedUser();
 	void exit();
+
+	void createPicCopy();
 
 
 	/// <summary>

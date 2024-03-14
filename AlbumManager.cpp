@@ -480,6 +480,68 @@ void AlbumManager::exit()
 	std::exit(EXIT_SUCCESS);
 }
 
+void AlbumManager::createPicCopy()
+{
+	refreshOpenAlbum();
+
+	std::string picName = getInputFromConsole("Enter picture name: ");
+	if (!m_openAlbum.doesPictureExists(picName)) {
+		throw MyException("Error: There is no picture with name <" + picName + ">.\n");
+	}
+
+	auto pic = m_openAlbum.getPicture(picName);
+	if (!fileExistsOnDisk(pic.getPath())) {
+		throw MyException("Error: Can't open <" + picName + "> since it doesnt exist on disk.\n");
+	}
+
+	std::string path = pic.getPath();
+	std::string newPath = "";
+
+	// Find the position of the last occurrence of '/'
+	size_t pos = path.find_last_of('/');
+	if (pos != std::string::npos) {
+
+		// Extract the directory path and the filename
+		std::string directory = path.substr(0, pos + 1); // Include the '/' in the directory
+		std::string filename = path.substr(pos + 1); // Exclude the '/'
+
+		// Insert "copyOf_" before the filename
+		std::string newFilename = "copyOf_" + filename;
+
+		// Construct the new path
+		newPath = directory + newFilename;
+	}
+	else 
+	{
+		newPath = "copyOf_" + path;
+	}
+
+	
+	//add the picture to the data base.
+	Picture copyPic(-1, "copyOf_" + pic.getName(), newPath, pic.getCreationDate());
+	m_dataAccess.addPictureToAlbumByName(m_openAlbum.getName(), copyPic);
+
+	std::ifstream inputfile(pic.getPath(), std::ios::binary);
+	
+	// Open the output image file
+	std::ofstream outputFile(newPath, std::ios::binary);
+
+	if (!outputFile.is_open()) {
+		std::cerr << "Error: Unable to open output image file." << std::endl;
+	}
+
+	//insert content of file to another.
+	outputFile << inputfile.rdbuf();
+
+	// Close the file streams
+	inputfile.close();
+	outputFile.close();
+
+
+	std::cout << "Image copied successfully." << std::endl;
+
+}
+
 
 void AlbumManager::help()
 {
@@ -562,6 +624,7 @@ const std::vector<struct CommandGroup> AlbumManager::m_prompts  = {
 	{
 		"Supported Operations:",
 		{
+			{COPY_PICTURE, "Create a copy of picture in album."},
 			{ HELP , "Help (clean screen)" },
 			{ EXIT , "Exit." },
 		}
@@ -589,6 +652,8 @@ const std::map<CommandType, AlbumManager::handler_func_t> AlbumManager::m_comman
 	{ TOP_TAGGED_USER, &AlbumManager::topTaggedUser },
 	{ TOP_TAGGED_PICTURE, &AlbumManager::topTaggedPicture },
 	{ PICTURES_TAGGED_USER, &AlbumManager::picturesTaggedUser },
+	{COPY_PICTURE, &AlbumManager::createPicCopy },
 	{ HELP, &AlbumManager::help },
 	{ EXIT, &AlbumManager::exit }
 };
+;
