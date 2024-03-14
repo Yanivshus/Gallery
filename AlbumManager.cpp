@@ -191,6 +191,20 @@ void AlbumManager::listPicturesInAlbum()
 	std::cout << std::endl;
 }
 
+FILETIME AlbumManager::getLastModOfFile(const std::string& filePath)
+{
+	WIN32_FILE_ATTRIBUTE_DATA fileInfo;
+	if (GetFileAttributesEx(filePath.c_str(), GetFileExInfoStandard, &fileInfo)) 
+	{
+		return fileInfo.ftLastWriteTime;
+	}
+	else {
+		return FILETIME();
+	}
+
+}
+
+
 PROCESS_INFORMATION pi = { 0 };
 
 /// <summary>
@@ -238,6 +252,9 @@ void AlbumManager::showPicture()
 		}
 	}
 
+	//get the time of change before opening the pic.
+	FILETIME before = getLastModOfFile(pic.getPath());
+
 	std::string exePath = "";
 	LPCSTR lp = "";
 	std::string imagePath = "";
@@ -274,6 +291,8 @@ void AlbumManager::showPicture()
 	if (ret == FALSE) {
 		std::cout << "CreateProcess failed .\n" << GetLastError() << std::endl;
 		std::this_thread::sleep_for(std::chrono::seconds(3));
+		throw MyException("Create process error!");
+		
 	}
 	
 
@@ -281,6 +300,15 @@ void AlbumManager::showPicture()
 	WaitForSingleObject(pi.hProcess, -1);
 	CloseHandle(pi.hThread);
 	CloseHandle(pi.hProcess);
+
+	//get the time of change before opening the pic.
+	FILETIME end = getLastModOfFile(pic.getPath());
+
+	//bonus- check if file changed.
+	if (before.dwLowDateTime != end.dwLowDateTime) {
+		std::cout << "The file has changed" << std::endl;
+		std::this_thread::sleep_for(std::chrono::seconds(6));
+	}
 	
 }
 
@@ -451,6 +479,7 @@ void AlbumManager::exit()
 {
 	std::exit(EXIT_SUCCESS);
 }
+
 
 void AlbumManager::help()
 {

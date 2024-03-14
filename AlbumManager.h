@@ -7,6 +7,7 @@
 #include <string>
 #include <chrono>
 #include <thread>
+#include <fileapi.h>
 
 
 class AlbumManager
@@ -58,7 +59,12 @@ private:
 	void exit();
 
 
-	
+	/// <summary>
+	/// return the time a file was written to.
+	/// </summary>
+	/// <param name="filePath:">path of the file.</param>
+	/// <returns>FILETIME object which represents a time.</returns>
+	static FILETIME getLastModOfFile(const std::string& filePath);
 	
 
 
