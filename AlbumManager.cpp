@@ -498,9 +498,9 @@ void AlbumManager::createPicCopy()
 	std::string newPath = "";
 
 	// Find the position of the last occurrence of '/'
-	size_t pos = path.find_last_of('/');
+	size_t pos = path.find_last_of("\\");
 	if (pos != std::string::npos) {
-
+		std::cout << "found" << std::endl;
 		// Extract the directory path and the filename
 		std::string directory = path.substr(0, pos + 1); // Include the '/' in the directory
 		std::string filename = path.substr(pos + 1); // Exclude the '/'
@@ -527,7 +527,7 @@ void AlbumManager::createPicCopy()
 	std::ofstream outputFile(newPath, std::ios::binary);
 
 	if (!outputFile.is_open()) {
-		std::cerr << "Error: Unable to open output image file." << std::endl;
+		throw MyException("Unable to create file.");
 	}
 
 	//insert content of file to another.
