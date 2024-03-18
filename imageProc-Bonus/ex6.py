@@ -133,13 +133,35 @@ def preprocess_tiles(tiles):
     # loop over the tiles and use the average function I created to find the tile average color.
     for tile in tiles:
         avg_tiles.append(average(tile))
-        
+
     return avg_tiles
 
 
-
 def get_best_tiles(objective, tiles, averages, num_candidates):
-    pass
+    global curr_best_tile
+    objective_avg = average(objective)
+
+    best_tiles = []
+    best_dist = []
+    curr_smallest_dist = 10000000
+
+    # run on the amount of tiles we need
+    for turn in num_candidates:
+        # loop over the tiles
+        for i in tiles(0, len(tiles)):
+            # find the distance between the tile average and the target file
+            curr_distance = compare_pixel(objective_avg, averages[i])
+            # if the distance is smaller than the current smallest that means we found a better candidates.
+            if curr_distance < curr_smallest_dist and curr_distance not in best_dist:
+                curr_smallest_dist = curr_distance
+                curr_best_tile = tiles[i]
+
+        # adding the tile to the tile list I will return
+        best_tiles.append(curr_best_tile)
+        best_dist.append(curr_smallest_dist)
+        curr_smallest_dist = 10000000
+
+    return best_tiles
 
 
 def choose_tile(piece, tiles):
