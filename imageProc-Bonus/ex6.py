@@ -11,8 +11,8 @@ def compare_pixel(pixel1, pixel2):
 
 def compare(image1, image2):
     total_dist = 0
-    im1_list = mosaic.lists_from_pil_image(image1)
-    im2_list = mosaic.lists_from_pil_image(image2)
+    im1_list = image1
+    im2_list = image2
 
     # find the sizes of the lists.
     row_size_1 = len(im1_list)
@@ -109,11 +109,33 @@ def set_piece(image, upper_left, piece):
 
 
 def average(image):
-    pass
+    im_list = image
+
+    avgR = 0
+    avgG = 0
+    avgB = 0
+
+    # calculate the amount of pixels
+    num_pixels = len(im_list) * len(im_list[0])
+
+    # adding all the r,g,b values of an image together to find their avg.
+    for i in im_list:
+        for j in i:
+            avgR += j[0]
+            avgG += j[1]
+            avgB += j[2]
+
+    return avgR / num_pixels, avgG / num_pixels, avgB / num_pixels
 
 
 def preprocess_tiles(tiles):
-    pass
+    avg_tiles = []
+    # loop over the tiles and use the average function I created to find the tile average color.
+    for tile in tiles:
+        avg_tiles.append(average(tile))
+        
+    return avg_tiles
+
 
 
 def get_best_tiles(objective, tiles, averages, num_candidates):
