@@ -31,14 +31,17 @@ def compare(image1, image2):
 
 def get_piece(image, upper_left, size):
     global slice_row, slice_col
-    im_list = mosaic.lists_from_pil_image(image)
+    im_list = image
 
+    # getting the size of an image
     pic_max_height = len(im_list)
     pic_max_width = len(im_list[0])
 
+    # getting the row and col of left corner of the piece of the picture i need.
     row = upper_left[0]
     col = upper_left[1]
 
+    # getting the piece size
     piece_height = size[0]
     piece_width = size[1]
 
@@ -55,17 +58,17 @@ def get_piece(image, upper_left, size):
 
     # constructing the new image
     for i in range(row, slice_row - 1):
-        sliced_piece.append(i[col:slice_col - 1])
+        sliced_piece.append(im_list[i][col:slice_col - 1])
 
-    return mosaic.pil_image_from_lists(sliced_piece)
+    return sliced_piece
 
 
 def set_piece(image, upper_left, piece):
     global slice_row, slice_col, pi_slice_row, pi_slice_col
 
     # image and piece lists
-    im_list = mosaic.lists_from_pil_image(image)
-    pi_list = mosaic.lists_from_pil_image(piece)
+    im_list = image
+    pi_list = piece
 
     # image sizes
     im_max_height = len(im_list)
@@ -101,7 +104,7 @@ def set_piece(image, upper_left, piece):
     pi_index = 0
     # take each list and copy slice of the piece to the image.
     for i in range(row, slice_row):
-        image[i][col: slice_col] = piece[pi_index][0:pi_slice_col]
+        im_list[i][col: slice_col] = pi_list[pi_index][0:pi_slice_col]
         pi_index += 1
 
 
