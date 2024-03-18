@@ -3,6 +3,12 @@
 #include "Constants.h"
 #include "MemoryAccess.h"
 #include "Album.h"
+#include <windows.h>
+#include <string>
+#include <chrono>
+#include <thread>
+#include <fileapi.h>
+#include <fstream>
 
 
 class AlbumManager
@@ -52,6 +58,28 @@ private:
 	void topTaggedPicture();
 	void picturesTaggedUser();
 	void exit();
+
+	//bonuses
+
+	/// <summary>
+	/// creates a copy of the picture.
+	/// </summary>
+	void createPicCopy();
+	
+	/// <summary>
+	/// changes the file premissions to readonly and back.
+	/// </summary>
+	void changeFilePremissions();
+
+
+	/// <summary>
+	/// return the time a file was written to.
+	/// </summary>
+	/// <param name="filePath:">path of the file.</param>
+	/// <returns>FILETIME object which represents a time.</returns>
+	static FILETIME getLastModOfFile(const std::string& filePath);
+	
+
 
 	std::string getInputFromConsole(const std::string& message);
 	bool fileExistsOnDisk(const std::string& filename);

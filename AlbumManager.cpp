@@ -5,6 +5,8 @@
 #include "AlbumNotOpenException.h"
 
 
+
+
 AlbumManager::AlbumManager(IDataAccess& dataAccess) :
     m_dataAccess(dataAccess), m_nextPictureId(100), m_nextUserId(200)
 {
@@ -189,6 +191,41 @@ void AlbumManager::listPicturesInAlbum()
 	std::cout << std::endl;
 }
 
+FILETIME AlbumManager::getLastModOfFile(const std::string& filePath)
+{
+	WIN32_FILE_ATTRIBUTE_DATA fileInfo;
+	if (GetFileAttributesEx(filePath.c_str(), GetFileExInfoStandard, &fileInfo)) 
+	{
+		return fileInfo.ftLastWriteTime;
+	}
+	else {
+		return FILETIME();
+	}
+
+}
+
+
+PROCESS_INFORMATION pi = { 0 };
+
+/// <summary>
+/// global function to catch handler of ctrl c, if ctrl c was caught it will terminate the process.
+/// </summary>
+/// <param name="fdwCtrlType:"> the ctrl type entered, ctrl c/b and so on </param>
+/// <returns></returns>
+BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
+{
+	switch (fdwCtrlType)
+	{
+		// Handle the CTRL-C signal. 
+	case CTRL_C_EVENT:
+		printf("Ctrl-C event\n\n");
+		TerminateProcess(pi.hProcess, 0);//if detected a ctrl c handker we will close the process.
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
 void AlbumManager::showPicture()
 {
 	refreshOpenAlbum();
@@ -203,10 +240,76 @@ void AlbumManager::showPicture()
 		throw MyException("Error: Can't open <" + picName+ "> since it doesnt exist on disk.\n");
 	}
 
-	// Bad practice!!!
-	// Can lead to privileges escalation
-	// You will replace it on WinApi Lab(bonus)
-	system(pic.getPath().c_str()); 
+	std::string choice = "";
+	bool flag = false;
+	//running untill the user picks a program.
+	while (flag == false) {
+		std::cout << "	Enter with which program you want to open the picture (p-mspaint, i-irfanview): ";
+		std::cin >> choice;
+		//if the user entered p or i the loop will stop.
+		if (choice == "i" || choice == "p") {
+			flag = true;
+		}
+	}
+
+	//get the time of change before opening the pic.
+	FILETIME before = getLastModOfFile(pic.getPath());
+
+	std::string exePath = "";
+	LPCSTR lp = "";
+	std::string imagePath = "";
+	std::string cmdLine = "";
+	LPSTR cmdLinePtr = "";
+
+	//checking which program the user chose.
+	if (choice == "p") {
+		exePath = "C:\\Windows\\System32\\mspaint.exe";
+		lp = exePath.c_str();
+
+		cmdLine += "/p " + pic.getPath();
+		cmdLinePtr = const_cast<LPSTR>(cmdLine.c_str());
+	}
+	else if (choice == "i") {
+		exePath = "C:\\IrfanView\\i_view32.exe";
+		lp = NULL;
+
+		//creating the path of the irfanview picture.
+		cmdLine += exePath + " \"" + pic.getPath() + " \"";
+		cmdLinePtr = const_cast<LPSTR>(cmdLine.c_str());
+		
+	}
+
+	//nescessry veriables to create a process.
+	STARTUPINFO si = { 0 };
+	si.cb = sizeof(STARTUPINFO);
+	si.dwFlags = STARTF_USESHOWWINDOW;
+	si.wShowWindow = true;
+
+	BOOL ret = CreateProcess(lp, cmdLinePtr, NULL, NULL, false, 0, NULL, NULL, &si, &pi);//start the proscess.
+
+	//if the process couldnt be created we will print the error and wait a bit so the user could read it.
+	if (ret == FALSE) {
+		std::cout << "CreateProcess failed .\n" << GetLastError() << std::endl;
+		std::this_thread::sleep_for(std::chrono::seconds(3));
+		throw MyException("Create process error!");
+		
+	}
+	
+
+	if (SetConsoleCtrlHandler(CtrlHandler, true)) {};
+	WaitForSingleObject(pi.hProcess, -1);
+	CloseHandle(pi.hThread);
+	CloseHandle(pi.hProcess);
+
+	//get the time of change before opening the pic.
+	FILETIME end = getLastModOfFile(pic.getPath());
+
+	//bonus- check if file changed.
+	if (before.dwLowDateTime != end.dwLowDateTime) {
+		std::cout << "The file has changed" << std::endl;
+		std::this_thread::sleep_for(std::chrono::seconds(6));
+	}
+	
 }
 
 void AlbumManager::tagUserInPicture()
@@ -377,11 +480,136 @@ void AlbumManager::exit()
 	std::exit(EXIT_SUCCESS);
 }
 
+void AlbumManager::createPicCopy()
+{
+	refreshOpenAlbum();
+
+	std::string picName = getInputFromConsole("Enter picture name: ");
+	if (!m_openAlbum.doesPictureExists(picName)) {
+		throw MyException("Error: There is no picture with name <" + picName + ">.\n");
+	}
+
+	auto pic = m_openAlbum.getPicture(picName);
+	if (!fileExistsOnDisk(pic.getPath())) {
+		throw MyException("Error: Can't open <" + picName + "> since it doesnt exist on disk.\n");
+	}
+
+	std::string path = pic.getPath();
+	std::string newPath = "";
+
+	// Find the position of the last occurrence of '/'
+	size_t pos = path.find_last_of("\\");
+	if (pos != std::string::npos) {
+		std::cout << "found" << std::endl;
+		// Extract the directory path and the filename
+		std::string directory = path.substr(0, pos + 1); // Include the '/' in the directory
+		std::string filename = path.substr(pos + 1); // Exclude the '/'
+
+		// Insert "copyOf_" before the filename
+		std::string newFilename = "copyOf_" + filename;
+
+		// Construct the new path
+		newPath = directory + newFilename;
+	}
+	else 
+	{
+		newPath = "copyOf_" + path;
+	}
+
+	
+	//add the picture to the data base.
+	Picture copyPic(-1, "copyOf_" + pic.getName(), newPath, pic.getCreationDate());
+	m_dataAccess.addPictureToAlbumByName(m_openAlbum.getName(), copyPic);
+
+	std::ifstream inputfile(pic.getPath(), std::ios::binary);
+	
+	// Open the output image file
+	std::ofstream outputFile(newPath, std::ios::binary);
+
+	if (!outputFile.is_open()) {
+		throw MyException("Unable to create file.");
+	}
+
+	//insert content of file to another.
+	outputFile << inputfile.rdbuf();
+
+	// Close the file streams
+	inputfile.close();
+	outputFile.close();
+
+
+	std::cout << "Image copied successfully." << std::endl;
+
+}
+
+void AlbumManager::changeFilePremissions()
+{
+	//get the picture path from user.
+	std::string picName = getInputFromConsole("Enter picture path: ");
+	if (!fileExistsOnDisk(picName)) {
+		throw MyException("Error: Can't open <" + picName + "> since it doesnt exist on disk.\n");
+	}
+
+	//get the picture attributes.
+	DWORD attributes = GetFileAttributesA(picName.c_str());
+	if (attributes == INVALID_FILE_ATTRIBUTES) {
+		DWORD error = GetLastError();
+		throw MyException("failed to get file attributes.");
+	}
+
+	// run a loop to determine if the user want to make the picture readonly - 1.
+	// or make the picture writeable - 0.
+	std::string choice = "";
+	while (choice != "1" && choice != "0") {
+		std::cout << "	Enter 1 if you wan't to make the file readonly or 0 to make it writable: ";
+		std::cin >> choice;
+	}
+
+	// if the user chose 1
+	if (choice == "1")
+	{
+		//we will check if the picture is already set to readonly.
+		if (attributes & FILE_ATTRIBUTE_READONLY)
+		{
+			std::cout << "file already readonly" << std::endl;
+		}
+		else // if not i will set it to readonly.
+		{
+			if (!SetFileAttributesA(picName.c_str(), FILE_ATTRIBUTE_READONLY))
+			{
+				DWORD error = GetLastError();
+				std::cerr << "Failed to set file attributes: " << error << std::endl;
+				throw MyException("failed to set file attributes.");
+			}
+		}
+	}
+	else if (choice == "0")
+	{
+		if (attributes & FILE_ATTRIBUTE_READONLY) // if the picture is readonly we will delete the readonly attribue and set it.
+		{
+			attributes &= ~FILE_ATTRIBUTE_READONLY;
+			if (!SetFileAttributesA(picName.c_str(), attributes)) 
+			{
+				DWORD error = GetLastError();
+				std::cerr << "Failed to set file attributes: " << error << std::endl;
+				throw MyException("failed to set file attributes.");
+			}
+			else 
+			{
+				std::cout << "file already writeable" << std::endl;
+			}
+		}
+	}
+}
+
+
 void AlbumManager::help()
 {
 	system("CLS");
 	printHelp();
 }
+
+
 
 std::string AlbumManager::getInputFromConsole(const std::string& message)
 {
@@ -456,6 +684,8 @@ const std::vector<struct CommandGroup> AlbumManager::m_prompts  = {
 	{
 		"Supported Operations:",
 		{
+			{COPY_PICTURE, "Create a copy of picture in album."},
+			{CHANGE_PREM, "Change file to readonly or backwards."},
 			{ HELP , "Help (clean screen)" },
 			{ EXIT , "Exit." },
 		}
@@ -483,6 +713,9 @@ const std::map<CommandType, AlbumManager::handler_func_t> AlbumManager::m_comman
 	{ TOP_TAGGED_USER, &AlbumManager::topTaggedUser },
 	{ TOP_TAGGED_PICTURE, &AlbumManager::topTaggedPicture },
 	{ PICTURES_TAGGED_USER, &AlbumManager::picturesTaggedUser },
+	{COPY_PICTURE, &AlbumManager::createPicCopy },
+	{CHANGE_PREM, &AlbumManager::changeFilePremissions},
 	{ HELP, &AlbumManager::help },
 	{ EXIT, &AlbumManager::exit }
 };
+;

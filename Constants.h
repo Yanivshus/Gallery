@@ -34,6 +34,11 @@ enum CommandType
 	TOP_TAGGED_PICTURE,
 	PICTURES_TAGGED_USER,
 
+	COPY_PICTURE,
+	CHANGE_PREM
+	,
+
+
 	EXIT = 99
 };
 
