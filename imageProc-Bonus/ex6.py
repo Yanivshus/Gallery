@@ -1,4 +1,5 @@
 import mosaic
+import sys
 
 
 def compare_pixel(pixel1, pixel2):
@@ -31,6 +32,8 @@ def compare(image1, image2):
 
 def get_piece(image, upper_left, size):
     global slice_row, slice_col
+    slice_row = 0
+    slice_col = 0
     im_list = image
 
     # getting the size of an image
@@ -45,8 +48,8 @@ def get_piece(image, upper_left, size):
     piece_height = size[0]
     piece_width = size[1]
 
-    slice_row = piece_height
-    slice_col = piece_width
+    slice_row = row + piece_height
+    slice_col = col + piece_width
 
     # calculate if the size of a piece is between the bounds.
     if row + piece_height > pic_max_height:
@@ -57,8 +60,8 @@ def get_piece(image, upper_left, size):
     sliced_piece = []
 
     # constructing the new image
-    for i in range(row, slice_row - 1):
-        sliced_piece.append(im_list[i][col:slice_col - 1])
+    for i in range(row, slice_row):
+        sliced_piece.append(im_list[i][col:col+56])
 
     return sliced_piece
 
@@ -131,8 +134,9 @@ def average(image):
 def preprocess_tiles(tiles):
     avg_tiles = []
     # loop over the tiles and use the average function I created to find the tile average color.
-    for tile in tiles:
-        avg_tiles.append(average(tile))
+
+    for i in range(0, len(tiles) - 1):
+        avg_tiles.append(average(tiles[i]))
 
     return avg_tiles
 
@@ -143,12 +147,12 @@ def get_best_tiles(objective, tiles, averages, num_candidates):
 
     best_tiles = []
     best_dist = []
-    curr_smallest_dist = 10000000
+    curr_smallest_dist = sys.maxsize
 
     # run on the amount of tiles we need
-    for turn in num_candidates:
+    for turn in range(num_candidates):
         # loop over the tiles
-        for i in tiles(0, len(tiles)):
+        for i in range(0, len(tiles) - 1):
             # find the distance between the tile average and the target file
             curr_distance = compare_pixel(objective_avg, averages[i])
             # if the distance is smaller than the current smallest that means we found a better candidates.
@@ -159,14 +163,54 @@ def get_best_tiles(objective, tiles, averages, num_candidates):
         # adding the tile to the tile list I will return
         best_tiles.append(curr_best_tile)
         best_dist.append(curr_smallest_dist)
-        curr_smallest_dist = 10000000
+        curr_smallest_dist = sys.maxsize
 
     return best_tiles
 
 
 def choose_tile(piece, tiles):
-    pass
+    global current_smallest_dist, best_tile
+    current_smallest_dist = sys.maxsize
+    best_tile = tiles[0]
+
+    # loop over the tiles
+    for tile in tiles:
+        current_dist = compare(tile, piece)  # get the dist between a piece and the current tile.
+        if current_dist < current_smallest_dist:  # find the smallest dist between tiles.
+            current_smallest_dist = current_dist
+            best_tile = tile  # save the tile so I can return it.
+
+    return best_tile
 
 
 def make_mosaic(image, tiles, num_candidates):
-    pass
+    global corner1, corner2
+    tile_height = len(tiles[0])
+    tile_width = len(tiles[0][0])
+
+    tile_avg = preprocess_tiles(tiles)
+
+    tile_size = (tile_height, tile_width)
+
+    for i in range(0, len(image), tile_height):
+        for j in range(0, len(image[0]), tile_width):
+            curr_piece = get_piece(image, (i, j), tile_size)
+            # print(len(curr_piece))
+            # print(len(curr_piece[0]))
+            # mosaic.save(curr_piece,str((i+1)*j)+".png")
+            best_tiles = get_best_tiles(curr_piece, tiles, tile_avg, num_candidates)
+            best = choose_tile(curr_piece, best_tiles)
+            set_piece(image, (i, j), best)
+
+    mosaic.save(image, "new.png")
+
+
+def main():
+    tiles = mosaic.build_tile_base("images", 40)
+    img = mosaic.load_image("im1.jpg")
+
+    make_mosaic(img, tiles, 40)
+
+
+if __name__ == '__main__':
+    main()

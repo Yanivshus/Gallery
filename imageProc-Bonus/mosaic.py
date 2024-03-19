@@ -33,7 +33,7 @@ def build_tile_base(tiles_dir, tile_height):
             if img.mode != 'RGB':
                 img = img.convert(mode='RGB')
             img_ratio = img.size[0] / img.size[1]
-            img = img.resize((int(img_ratio * tile_height), tile_height), Image.ANTIALIAS)
+            img = img.resize((int(img_ratio * tile_height), tile_height), Image.LANCZOS)
             tiles.append(lists_from_pil_image(img))
             widths.append(img.size[0])
         except IOError:
