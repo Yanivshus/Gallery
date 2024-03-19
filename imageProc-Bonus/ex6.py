@@ -49,19 +49,16 @@ def get_piece(image, upper_left, size):
     piece_width = size[1]
 
     slice_row = row + piece_height
-    slice_col = col + piece_width
 
     # calculate if the size of a piece is between the bounds.
     if row + piece_height > pic_max_height:
         slice_row = pic_max_height
-    if col + piece_width > pic_max_width:
-        slice_col = pic_max_width
 
     sliced_piece = []
 
     # constructing the new image
     for i in range(row, slice_row):
-        sliced_piece.append(im_list[i][col:col+56])
+        sliced_piece.append(im_list[i][col:col + piece_width])
 
     return sliced_piece
 
@@ -184,32 +181,35 @@ def choose_tile(piece, tiles):
 
 
 def make_mosaic(image, tiles, num_candidates):
-    global corner1, corner2
     tile_height = len(tiles[0])
     tile_width = len(tiles[0][0])
 
+    # get tile averages
     tile_avg = preprocess_tiles(tiles)
 
     tile_size = (tile_height, tile_width)
 
+    # run in the image to get corners for tiles.
     for i in range(0, len(image), tile_height):
         for j in range(0, len(image[0]), tile_width):
-            curr_piece = get_piece(image, (i, j), tile_size)
-            # print(len(curr_piece))
-            # print(len(curr_piece[0]))
-            # mosaic.save(curr_piece,str((i+1)*j)+".png")
-            best_tiles = get_best_tiles(curr_piece, tiles, tile_avg, num_candidates)
-            best = choose_tile(curr_piece, best_tiles)
-            set_piece(image, (i, j), best)
+            curr_piece = get_piece(image, (i, j), tile_size)  # get the curr piece I will replace.
+            best_tiles = get_best_tiles(curr_piece, tiles, tile_avg, num_candidates)  # get the most similar tiles.
+            best = choose_tile(curr_piece, best_tiles)  # choose the most similar.
+            set_piece(image, (i, j), best)  # put the piece in the picture.
 
-    mosaic.save(image, "new.png")
+    return image
 
 
 def main():
-    tiles = mosaic.build_tile_base("images", 40)
-    img = mosaic.load_image("im1.jpg")
-
-    make_mosaic(img, tiles, 40)
+    # there 6 cmd line arguments.
+    if len(sys.argv) < 6:
+        print("Wrong number of parameters. The correct usage is:\nex6.py <image_source> <images_dir> <output_name> <tile_height> <num_candidates>")
+    else:
+        # first I will load tiles and the image
+        img = mosaic.load_image(sys.argv[1])
+        tiles = mosaic.build_tile_base(sys.argv[2], int(sys.argv[4]))
+        image = make_mosaic(img, tiles, int(sys.argv[5]))  # then I will make the mosaic
+        mosaic.save(image, sys.argv[3])
 
 
 if __name__ == '__main__':
